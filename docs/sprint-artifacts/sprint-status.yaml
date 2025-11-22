@@ -36,7 +36,7 @@ story_location: C:\Users\User\Desktop\AIHedgeFund\docs\sprint-artifacts
 
 development_status:
   epic-1: contexted
-  1-1-project-setup-repository-structure: review
+  1-1-project-setup-repository-structure: done
   1-2-database-schema-models: backlog
   1-3-abstract-data-source-interface: backlog
   1-4-eodhd-api-integration-mvp-financial-data-provider: backlog

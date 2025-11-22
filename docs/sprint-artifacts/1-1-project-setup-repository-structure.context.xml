@@ -1,0 +1,288 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>1.1</storyId>
+    <title>Project Setup &amp; Repository Structure</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-22</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>C:\Users\User\Desktop\AIHedgeFund\docs\sprint-artifacts\1-1-project-setup-repository-structure.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>a well-organized project structure with Docker containerization</iWant>
+    <soThat>the system is deployable and maintainable from day 1</soThat>
+    <tasks>
+- **Task 1: Initialize Repository Structure** (AC: #1)
+  - Create root project folder: `aihedgefund/`
+  - Create `/backend` folder with Python package structure
+  - Create `/frontend` folder with React/Vite structure
+  - Create `/agents` folder structure
+  - Create `/data/inbox` folder structure
+  - Create `/data/processed` folder for archiving
+  - Create `/tests` folder structure
+
+- **Task 2: Configure Docker Multi-Container Setup** (AC: #2)
+  - Create `docker-compose.yml` with postgres, backend, frontend services
+  - Define volume mappings for database and data folders
+  - Configure environment variables (DATABASE_URL, API keys)
+  - Set up networking and expose ports
+  - Create `.env.example` with template values
+  - Add `.gitignore` for secrets and generated files
+
+- **Task 3: Implement Backend Health Check Endpoint** (AC: #3)
+  - Create FastAPI application in `backend/app/main.py`
+  - Implement health check endpoint in `backend/app/api/health.py`
+  - Register health router with proper path prefix
+  - Create minimal backend Dockerfile
+
+- **Task 4: Create Documentation** (AC: #1)
+  - Write comprehensive `README.md` with quickstart
+  - Create `CONTRIBUTING.md` with contribution guidelines
+  - Create `LICENSE` file
+
+- **Task 5: Testing &amp; Validation** (AC: #1, #2, #3)
+  - Write integration test for health check endpoint
+  - Manual verification checklist for Docker build and startup
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+**AC#1: Repository Structure Exists**
+- Repository has defined directory structure: `/backend`, `/frontend`, `/agents`, `/data/inbox/*`, `/data/processed`, `/tests`
+- Docker configuration files exist: `docker-compose.yml`, `.env.example`
+- Documentation files exist: `README.md`
+
+**AC#2: Docker Containers Build Successfully**
+- `docker-compose build` completes without errors
+- All containers start with `docker-compose up`
+- No port conflicts (backend:8000, frontend:5173, postgres:5432)
+
+**AC#3: Health Check Endpoint Returns 200 OK**
+- GET request to `http://localhost:8000/api/health` returns 200 OK
+- Response includes: status, timestamp, services.database, services.cache
+- Database status shows "connected" when postgres is running
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <!-- Epic Documentation -->
+      <doc>
+        <path>docs/epics/epic-1-foundation-data-architecture.md</path>
+        <title>Epic 1: Foundation &amp; Data Architecture</title>
+        <section>Story 1.1 Technical Notes</section>
+        <snippet>Python 3.14 backend, FastAPI 0.121.3, React 19, PostgreSQL 18.1. Code reuse from reference system at ai-hedge-fund/ for backend structure, Docker config, LangGraph patterns.</snippet>
+      </doc>
+
+      <!-- Technical Specification -->
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-1.md</path>
+        <title>Epic Technical Specification</title>
+        <section>Detailed Design → Services and Modules</section>
+        <snippet>Backend API module with FastAPI, Database layer with SQLAlchemy models, Data Sources with abstract interface, LangGraph orchestration foundation. Docker containerization with postgres:18.1, backend (FastAPI), frontend (React).</snippet>
+      </doc>
+
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-1.md</path>
+        <title>Epic Technical Specification</title>
+        <section>Dependencies and Integrations</section>
+        <snippet>Python 3.14+, fastapi==0.121.3, uvicorn, sqlalchemy[asyncio]==2.0.36, alembic==1.14.0, asyncpg==0.30.0, pydantic==2.10.4, langgraph==1.0.5, httpx==0.28.1, pandas==2.2.3, structlog==24.4.0</snippet>
+      </doc>
+
+      <!-- Architecture Documentation -->
+      <doc>
+        <path>docs/architecture/project-structure.md</path>
+        <title>Project Structure</title>
+        <section>Full Directory Layout</section>
+        <snippet>Root: docker-compose.yml, .env.example, .gitignore, README.md, requirements.txt. Backend: src/main.py, src/api/, src/models/, src/services/, src/core/. Frontend: app/frontend/ with React 19, TypeScript, Vite. Tests: tests/unit/, tests/integration/, tests/e2e/</snippet>
+      </doc>
+
+      <doc>
+        <path>docs/architecture/technology-stack-details.md</path>
+        <title>Technology Stack Details</title>
+        <section>Core Technologies</section>
+        <snippet>Backend: Python 3.14 (free-threaded, JIT), FastAPI 0.121.3 (async), LangGraph 1.0.5, PostgreSQL 18.1 (3× I/O perf), SQLAlchemy 2.x (async ORM). Frontend: React 19, TypeScript 5.x, Vite 6, TanStack Query, TailwindCSS.</snippet>
+      </doc>
+
+      <doc>
+        <path>docs/architecture/deployment-architecture.md</path>
+        <title>Deployment Architecture</title>
+        <section>MVP Deployment (docker-compose.yml)</section>
+        <snippet>Services: postgres:18.1, backend (FastAPI), frontend (React), scheduler (automation). Environment variables for DATABASE_URL, EODHD_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY, GOOGLE_API_KEY.</snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <!-- Reference System Code for Reuse -->
+      <artifact>
+        <path>../ai-hedge-fund/docker/docker-compose.yml</path>
+        <kind>reference-docker</kind>
+        <symbol>multi-service-orchestration</symbol>
+        <lines>1-95</lines>
+        <reason>Reference pattern for multi-container Docker setup. Adapt service definitions, volume mappings, environment variables for UK system (postgres, backend, frontend services).</reason>
+      </artifact>
+
+      <artifact>
+        <path>../ai-hedge-fund/.env.example</path>
+        <kind>reference-config</kind>
+        <symbol>environment-variables</symbol>
+        <lines>1-38</lines>
+        <reason>Template for environment variable structure. Adapt for UK system: EODHD_API_KEY (not FINANCIAL_DATASETS_API_KEY), add POSTGRES credentials, keep OpenAI/Anthropic/Google API keys.</reason>
+      </artifact>
+
+      <artifact>
+        <path>../ai-hedge-fund/app/backend/main.py</path>
+        <kind>reference-backend</kind>
+        <symbol>FastAPI-app-structure</symbol>
+        <lines>all</lines>
+        <reason>Reference FastAPI application entry point structure. Reuse patterns for CORS middleware, router registration, lifespan startup logic.</reason>
+      </artifact>
+    </code>
+
+    <dependencies>
+      <python>
+        <package name="fastapi" version="0.121.3" />
+        <package name="uvicorn[standard]" version="0.34.0" />
+        <package name="sqlalchemy[asyncio]" version="2.0.36" />
+        <package name="alembic" version="1.14.0" />
+        <package name="asyncpg" version="0.30.0" />
+        <package name="pydantic" version="2.10.4" />
+        <package name="pydantic-settings" version="2.7.0" />
+        <package name="langgraph" version="1.0.5" />
+        <package name="httpx" version="0.28.1" />
+        <package name="pandas" version="2.2.3" />
+        <package name="structlog" version="24.4.0" />
+        <package name="python-dotenv" version="1.0.1" />
+      </python>
+
+      <docker>
+        <image name="postgres" version="18.1" />
+        <image name="python" version="3.14" />
+        <image name="node" version="22" />
+      </docker>
+
+      <frontend>
+        <package name="react" version="19" />
+        <package name="typescript" version="5.x" />
+        <package name="vite" version="6" />
+      </frontend>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <!-- Architecture Patterns and Constraints from Dev Notes -->
+    <constraint type="technology-stack">
+      <rule>Python 3.14 (free-threaded, JIT), FastAPI 0.121.3, React 19, TypeScript 5.x, PostgreSQL 18.1, Docker</rule>
+    </constraint>
+
+    <constraint type="backend-structure">
+      <rule>Follow /backend/app/ organization with clear separation: api/, models/, services/, core/</rule>
+    </constraint>
+
+    <constraint type="container-strategy">
+      <rule>Multi-container Docker Compose with services: postgres (18.1), backend (FastAPI), frontend (React/Vite)</rule>
+    </constraint>
+
+    <constraint type="environment-variables">
+      <rule>ALL secrets in .env (never committed), use python-dotenv for loading</rule>
+    </constraint>
+
+    <constraint type="health-check-pattern">
+      <rule>Implement /api/health endpoint with database connectivity check</rule>
+    </constraint>
+
+    <constraint type="code-reuse">
+      <rule>Align with Reference System structure (ai-hedge-fund/) where applicable: reuse route patterns (/api/v1/analysis, /api/v1/portfolio), reuse dashboard layout concepts, adapt Docker service definitions</rule>
+    </constraint>
+
+    <constraint type="do-not-copy">
+      <rule>DO NOT COPY from Reference: Sequential workflow logic (we're building batch overnight), US market assumptions, Financial Datasets API integration (we use EODHD)</rule>
+    </constraint>
+
+    <constraint type="testing-standards">
+      <rule>Unit test coverage target: 70%+ for core logic</rule>
+      <rule>Integration tests for critical workflows</rule>
+      <rule>Follow pytest conventions for test structure</rule>
+      <rule>Test file naming: test_&lt;module&gt;.py</rule>
+    </constraint>
+
+    <constraint type="naming-conventions">
+      <rule>Files: snake_case for Python (e.g., health_check.py), kebab-case for frontend (e.g., api-client.ts)</rule>
+      <rule>Folders: kebab-case throughout (e.g., ticker-lists, research-reports)</rule>
+      <rule>Docker services: lowercase with underscores (e.g., postgres, backend, frontend)</rule>
+    </constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>Health Check Endpoint</name>
+      <kind>REST API</kind>
+      <signature>GET /api/health</signature>
+      <path>backend/app/api/health.py</path>
+      <description>Health check endpoint that returns 200 OK with system status, timestamp, and service connectivity (database, cache)</description>
+      <response>
+        {
+          "status": "healthy",
+          "timestamp": "&lt;ISO-8601 timestamp&gt;",
+          "services": {
+            "database": "connected",
+            "cache": "not_configured"
+          }
+        }
+      </response>
+    </interface>
+
+    <interface>
+      <name>Database Session</name>
+      <kind>function dependency</kind>
+      <signature>async def get_db()</signature>
+      <path>backend/app/core/database.py</path>
+      <description>Database session dependency for health check and future endpoints. Returns async SQLAlchemy session.</description>
+    </interface>
+
+    <interface>
+      <name>FastAPI Application</name>
+      <kind>application entrypoint</kind>
+      <signature>app = FastAPI()</signature>
+      <path>backend/app/main.py</path>
+      <description>FastAPI application instance with CORS middleware, registered routers (health, future: analysis, portfolio), lifespan startup logic</description>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Unit testing with pytest, 70%+ coverage for core logic. Integration tests for critical workflows (Docker build, health check). Test file naming: test_&lt;module&gt;.py. Use pytest-asyncio for async tests. Test data fixtures in tests/fixtures/. Follow AAA pattern (Arrange, Act, Assert).
+    </standards>
+
+    <locations>
+      tests/unit/ - Unit tests for individual modules
+      tests/integration/ - Integration tests (e.g., test_health.py)
+      tests/fixtures/ - Test data fixtures
+      tests/e2e/ - End-to-end tests (future)
+    </locations>
+
+    <ideas>
+      <!-- Mapped to Acceptance Criteria -->
+      <test ac="1">
+        <description>Test repository structure exists</description>
+        <approach>Verify folders exist: /backend, /frontend, /agents, /data/inbox/*, /data/processed, /tests. Verify files exist: docker-compose.yml, .env.example, .gitignore, README.md</approach>
+      </test>
+
+      <test ac="2">
+        <description>Test Docker containers build successfully</description>
+        <approach>Run docker-compose build, verify exit code 0. Run docker-compose up -d, verify all containers running. Check no port conflicts (8000, 5173, 5432).</approach>
+      </test>
+
+      <test ac="3">
+        <description>Test health check endpoint returns 200 OK</description>
+        <approach>Integration test in tests/integration/test_health.py: Start backend, send GET to http://localhost:8000/api/health, assert status 200, assert JSON structure matches spec (status, timestamp, services.database, services.cache)</approach>
+      </test>
+
+      <test ac="all">
+        <description>Manual verification checklist</description>
+        <approach>Run docker-compose build → success. Run docker-compose up → all containers start. Check logs → no critical errors. Test health endpoint with curl → 200 OK. Verify folder structure matches spec. Verify .env.example has all keys. Verify README quickstart works from clean state.</approach>
+      </test>
+    </ideas>
+  </tests>
+</story-context>

@@ -1,0 +1,100 @@
+# AIHedgeFund - Docker Compose Configuration
+# PostgreSQL 18.1 + Redis for local development
+#
+# Usage:
+#   Start: docker-compose up -d
+#   Stop:  docker-compose down
+#   Logs:  docker-compose logs -f postgres
+
+version: '3.8'
+
+services:
+  # ============================================================================
+  # PostgreSQL 18.1 - Primary Database (Epic 1)
+  # ============================================================================
+  postgres:
+    image: postgres:18.1-alpine
+    container_name: aihedgefund-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-aihedgefund}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devpassword}
+      POSTGRES_DB: ${POSTGRES_DB:-aihedgefund}
+      # PostgreSQL 18.1 optimizations
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aihedgefund"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - aihedgefund-network
+
+  # ============================================================================
+  # Redis - Caching & Message Broker (Epic 6)
+  # ============================================================================
+  redis:
+    image: redis:7.4-alpine
+    container_name: aihedgefund-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-devpassword}
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - aihedgefund-network
+
+  # ============================================================================
+  # pgAdmin (Optional - Database Management UI)
+  # ============================================================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: aihedgefund-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@aihedgefund.local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-devpassword}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    networks:
+      - aihedgefund-network
+    profiles:
+      - tools  # Start with: docker-compose --profile tools up -d
+
+# ============================================================================
+# Volumes
+# ============================================================================
+volumes:
+  postgres_data:
+    driver: local
+    name: aihedgefund-postgres-data
+  redis_data:
+    driver: local
+    name: aihedgefund-redis-data
+  pgadmin_data:
+    driver: local
+    name: aihedgefund-pgadmin-data
+
+# ============================================================================
+# Networks
+# ============================================================================
+networks:
+  aihedgefund-network:
+    driver: bridge
+    name: aihedgefund-network

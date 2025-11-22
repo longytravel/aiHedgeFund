@@ -1,0 +1,63 @@
+# generated: 2025-11-22
+# project: AIHedgeFund
+# project_key: AIHedgeFund
+# tracking_system: file-system
+# story_location: C:\Users\User\Desktop\AIHedgeFund\docs\sprint-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic exists in epic file but not contexted
+#   - contexted: Next epic tech context created by *epic-tech-context (required)
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - drafted: Story file created in stories folder by *create-story
+#   - ready-for-dev: Draft approved and story context created by *story-ready
+#   - in-progress: Developer actively working on implementation by *dev-story
+#   - review: Implementation complete, ready for review by *code-review
+#   - done: Story completed by *story-done
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - completed: Retrospective has been done by *retrospective
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epics should be 'contexted' before stories can be 'drafted'
+# - SM typically drafts next story ONLY after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', dev reviews, then Dev moves to 'done'
+
+generated: 2025-11-22
+project: AIHedgeFund
+project_key: AIHedgeFund
+tracking_system: file-system
+story_location: C:\Users\User\Desktop\AIHedgeFund\docs\sprint-artifacts
+
+development_status:
+  epic-1: contexted
+  1-1-project-setup-repository-structure: ready-for-dev
+  1-2-database-schema-models: backlog
+  1-3-abstract-data-source-interface: backlog
+  1-4-eodhd-api-integration-mvp-financial-data-provider: backlog
+  1-5-file-inbox-system-csv-ticker-lists: backlog
+  1-6-file-inbox-system-manual-stock-json: backlog
+  1-7-langgraph-agent-orchestration-foundation: backlog
+  1-8-multi-provider-llm-abstraction-layer: backlog
+  1-9-observability-logging-infrastructure: backlog
+  epic-1-retrospective: optional
+
+  epic-2: backlog
+  2-1-uk-company-ticker-master-database: backlog
+  2-2-news-scanner-agent-uk-financial-news: backlog
+  2-3-fundamental-screener-agent-data-driven-batch-scanning: backlog
+  2-4-insider-trading-agent-director-dealings: backlog
+  2-5-volume-price-action-agent-technical-signals: backlog
+  2-6-signal-aggregation-scoring-engine-critical: backlog
+  2-7-macro-economist-agent-uk-economic-context: backlog
+  2-8-sector-rotation-agent-identify-favored-sectors: backlog
+  2-9-research-queue-management-tier-3-tracking: backlog
+  2-10-signal-decay-time-based-weighting: backlog
+  2-11-configuration-management-system: backlog
+  2-12-discovery-batch-orchestration-langgraph-workflow: backlog
+  epic-2-retrospective: optional

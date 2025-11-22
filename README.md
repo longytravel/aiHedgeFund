@@ -35,31 +35,22 @@ A multi-agent AI system for analyzing UK stocks using discovery agents, signal c
 # 1. Clone the repository (or navigate to existing directory)
 cd AIHedgeFund
 
-# 2. Create virtual environment (Python 3.14+)
-python -m venv venv
-
-# Windows
-venv\Scripts\activate
-
-# macOS/Linux
-source venv/bin/activate
-
-# 3. Install dependencies
-pip install --upgrade pip
-pip install -r requirements.txt
-
-# 4. Configure environment variables
-cp .env.template .env
+# 2. Configure environment variables
+cp .env.example .env
 # Edit .env and add your API keys (see API Key Setup section below)
 
-# 5. Start PostgreSQL 18.1 + Redis
-docker-compose up -d
+# 3. Build and start all containers (backend, frontend, postgres)
+docker-compose build
+docker-compose up
 
-# 6. Verify setup
-pytest tests/test_sprint0_validation.py -v
+# 4. Verify health check endpoint
+curl http://localhost:8000/api/health
 
-# 7. Run the application (Story 1.1 onwards)
-uvicorn src.main:app --reload
+# 5. Access the frontend
+# Open browser to http://localhost:5173
+
+# 6. Access the backend API docs
+# Open browser to http://localhost:8000/docs
 ```
 
 **Setup Time:** ~20-25 minutes (excluding API key registration wait times)
@@ -152,34 +143,46 @@ LLM_FALLBACK_PROVIDERS=anthropic,google
 
 ```
 AIHedgeFund/
-├── src/                    # Backend Python source (Epic 1-6)
-│   ├── agents/             # Agent implementations
-│   │   ├── discovery/      # Epic 2: Discovery agents
-│   │   ├── macro_sector/   # Epic 2: Macro/sector context
-│   │   ├── analysis/       # Epic 3: Analysis agents
-│   │   └── decision/       # Epic 3: Decision agents
-│   ├── graph/              # Epic 3: LangGraph orchestration
-│   ├── data/               # Epic 1: Data integration layer
-│   │   └── providers/      # EODHD, CityFALCON, IBKR clients
-│   ├── models/             # Epic 1, 4: SQLAlchemy ORM models
-│   ├── schemas/            # Epic 1, 5: Pydantic schemas
-│   ├── services/           # Epic 2-6: Business logic
-│   ├── core/               # Epic 6: Signal bus, logging, errors
-│   ├── automation/         # Epic 6: Scheduling, tasks
-│   ├── api/                # Epic 5: FastAPI routes
-│   ├── db/                 # Epic 1: Database utilities
-│   └── utils/              # Shared utilities
-├── app/frontend/           # Epic 5: React frontend
-├── tests/                  # Test suite (60% unit, 25% integration, 15% e2e)
-│   ├── unit/               # Fast unit tests
-│   ├── integration/        # API integration tests
-│   └── e2e/                # End-to-end workflow tests
+├── backend/                # Backend Python application
+│   ├── app/                # FastAPI application code
+│   │   ├── api/            # API endpoints (health check, etc.)
+│   │   ├── models/         # SQLAlchemy ORM models (Epic 1)
+│   │   ├── services/       # Business logic services (Epic 2-6)
+│   │   ├── core/           # Core configuration and database
+│   │   └── main.py         # FastAPI entry point
+│   ├── requirements.txt    # Python dependencies
+│   └── Dockerfile          # Backend container definition
+├── frontend/               # React 19 frontend application
+│   ├── src/                # React source code
+│   │   ├── components/     # Reusable components
+│   │   ├── pages/          # Page-level components
+│   │   ├── services/       # API client services
+│   │   └── main.tsx        # React entry point
+│   ├── package.json        # Node dependencies
+│   ├── vite.config.ts      # Vite configuration
+│   ├── tsconfig.json       # TypeScript configuration
+│   ├── index.html          # HTML entry point
+│   └── Dockerfile          # Frontend container definition
+├── agents/                 # Agent implementations (Epic 2-3)
+│   ├── discovery/          # Discovery agents
+│   ├── analysis/           # Analysis agents
+│   ├── decision/           # Decision agents
+│   └── shared/             # Shared agent utilities
+├── data/                   # Data folders
+│   ├── inbox/              # File drop folders
+│   │   ├── ticker-lists/   # CSV ticker uploads
+│   │   ├── research-reports/ # PDF/markdown research
+│   │   └── manual-stocks/  # JSON stock additions
+│   └── processed/          # Processed files archive
+├── tests/                  # Test suite
+│   ├── unit/               # Unit tests
+│   ├── integration/        # Integration tests
+│   └── fixtures/           # Test data fixtures
 ├── docs/                   # Documentation (PRD, Architecture, Epics)
-├── scripts/                # Operational scripts
-├── .env.template           # Environment variable template
-├── docker-compose.yml      # PostgreSQL + Redis setup
-├── requirements.txt        # Python dependencies
-└── pyproject.toml          # Project configuration
+├── .env.example            # Environment variable template
+├── .gitignore              # Git ignore rules
+├── docker-compose.yml      # Multi-container orchestration
+└── README.md               # This file
 ```
 
 ---

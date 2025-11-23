@@ -70,15 +70,16 @@ class StockService:
 class SignalService:
     @staticmethod
     async def create_signal(
-        db: AsyncSession, stock_id: UUID, signal_type: str, score: float, 
-        timestamp, source: Optional[str] = None, data: Optional[dict] = None
+        db: AsyncSession, stock_id: UUID, stock_ticker: str, signal_type: str,
+        strength: int, agent_id: str, timestamp, data: Optional[dict] = None
     ) -> Signal:
         signal = Signal(
-            stock_id=stock_id, 
-            signal_type=signal_type, 
-            score=score, 
-            timestamp=timestamp, 
-            source=source, 
+            stock_id=stock_id,
+            stock_ticker=stock_ticker,
+            type=signal_type,  # Maps to 'type' column in model
+            strength=strength,
+            agent_id=agent_id,
+            timestamp=timestamp,
             data=data
         )
         db.add(signal)

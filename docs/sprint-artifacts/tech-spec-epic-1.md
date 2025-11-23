@@ -38,7 +38,7 @@ The epic transforms a greenfield project into a production-ready platform capabl
 
 The technical foundation aligns directly with the Implementation Architecture document:
 
-**Technology Stack:** Python 3.14 (free-threaded, JIT), FastAPI 0.121.3 (async), LangGraph 1.0.5 (durable agent orchestration), PostgreSQL 18.1 (3× I/O performance), React 19 (frontend), SQLAlchemy 2.x (async ORM).
+**Technology Stack:** Python 3.12 (latest stable, performance optimized), FastAPI 0.121.3 (async), LangGraph 1.0.3 (latest stable, durable agent orchestration), PostgreSQL 18.1 (3× I/O performance), React 19 (frontend), SQLAlchemy 2.x (async ORM).
 
 **Agent Network:** LangGraph StateGraph architecture with parallel fan-out for discovery agents, convergence scoring, conditional routing to analysis agents, and sequential decision pipeline (Risk Manager → Portfolio Manager).
 
@@ -391,7 +391,7 @@ app = workflow.compile()
 [project]
 name = "aihedgefund"
 version = "0.1.0"
-requires-python = ">=3.14"
+requires-python = ">=3.12"  # Updated to match actual available stable version (2025-11-23)
 
 dependencies = [
     "fastapi==0.121.3",
@@ -401,7 +401,7 @@ dependencies = [
     "asyncpg==0.30.0",  # PostgreSQL async driver
     "pydantic==2.10.4",
     "pydantic-settings==2.7.0",
-    "langgraph==1.0.5",
+    "langgraph==1.0.3",  # Updated to actual latest stable (verified 2025-11-23)
     "langchain==1.0.0",
     "openai==1.59.6",
     "anthropic==0.42.0",

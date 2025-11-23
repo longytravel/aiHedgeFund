@@ -63,22 +63,27 @@ async def test_signal_model_creation(db_session):
     stock = Stock(ticker="SIG.L", name="Signal Corp", sector="Finance")
     db_session.add(stock)
     await db_session.commit() # Commit to get ID
-    
-    # Create signal
+
+    # Create signal with updated schema
     signal = Signal(
         stock_id=stock.id,
-        signal_type="BULLISH_CROSSOVER",
-        score=0.85,
+        stock_ticker="SIG.L",
+        type="BULLISH_CROSSOVER",
+        strength=85,  # Changed from score (0.85) to strength (85)
+        agent_id="technical_analyst",
         timestamp=datetime.now(),
-        source="TechnicalAgent",
         data={"ma_50": 100, "ma_200": 95}
     )
     db_session.add(signal)
     await db_session.commit()
-    
+
     assert signal.id is not None
     assert signal.data["ma_50"] == 100
     assert signal.stock_id == stock.id
+    assert signal.stock_ticker == "SIG.L"
+    assert signal.type == "BULLISH_CROSSOVER"
+    assert signal.strength == 85
+    assert signal.agent_id == "technical_analyst"
 
 @pytest.mark.asyncio
 async def test_stock_unique_ticker(db_session):
@@ -91,6 +96,81 @@ async def test_stock_unique_ticker(db_session):
 
     stock2 = Stock(ticker="UNIQ.L", name="Unique 2")
     db_session.add(stock2)
-    
+
     with pytest.raises(sqlalchemy.exc.IntegrityError):
         await db_session.commit()
+
+
+# Additional JSONB field tests (addressing review finding #6)
+@pytest.mark.asyncio
+async def test_analysis_result_jsonb_fields(db_session):
+    """Test AnalysisResult model with JSONB key_metrics and risks fields."""
+    from app.models.analysis_result_model import AnalysisResult
+
+    # Create stock first (use unique ticker to avoid conflicts)
+    stock = Stock(ticker="ANLYS.L", name="Analysis Test Company")
+    db_session.add(stock)
+    await db_session.commit()
+
+    # Create analysis result with JSONB fields
+    analysis = AnalysisResult(
+        stock_id=stock.id,
+        stock_ticker="ANLYS.L",
+        agent_id="value_investor",
+        recommendation="BUY",
+        score=85,
+        confidence="HIGH",
+        reasoning="Strong fundamentals and undervalued",
+        key_metrics={"pe_ratio": 12.5, "roe": 0.18, "debt_equity": 0.3},
+        risks={"market_risk": "MEDIUM", "sector_risk": "LOW"},
+        timestamp=datetime.now()
+    )
+    db_session.add(analysis)
+    await db_session.commit()
+
+    assert analysis.id is not None
+    assert analysis.key_metrics["pe_ratio"] == 12.5
+    assert analysis.risks["market_risk"] == "MEDIUM"
+
+
+@pytest.mark.asyncio
+async def test_agent_config_jsonb_parameters(db_session):
+    """Test AgentConfig model with JSONB parameters field."""
+    from app.models.agent_config_model import AgentConfig
+
+    config = AgentConfig(
+        agent_name="news_scanner",
+        enabled=True,
+        weight=1.5,
+        parameters={"max_articles": 50, "sentiment_threshold": 0.7, "sources": ["BBC", "FT"]}
+    )
+    db_session.add(config)
+    await db_session.commit()
+
+    assert config.id is not None
+    assert config.parameters["max_articles"] == 50
+    assert "BBC" in config.parameters["sources"]
+
+
+@pytest.mark.asyncio
+async def test_audit_log_jsonb_details(db_session):
+    """Test AuditLog model with JSONB details field."""
+    from app.models.audit_log_model import AuditLog
+
+    audit_entry = AuditLog(
+        action="TRADE_EXECUTED",
+        details={
+            "stock_ticker": "VOD.L",
+            "action": "BUY",
+            "quantity": 1000,
+            "price": 72.50,
+            "reason": "Strong buy signals from 3 agents"
+        },
+        user_id="system"
+    )
+    db_session.add(audit_entry)
+    await db_session.commit()
+
+    assert audit_entry.id is not None
+    assert audit_entry.details["stock_ticker"] == "VOD.L"
+    assert audit_entry.details["quantity"] == 1000

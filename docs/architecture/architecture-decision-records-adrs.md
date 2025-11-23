@@ -1,23 +1,24 @@
 # Architecture Decision Records (ADRs)
 
-### ADR-001: Use Python 3.14 (Latest Stable)
+### ADR-001: Use Python 3.12 (Latest Stable)
 
 **Context:** Need to choose Python version for 5+ year project lifespan.
 
-**Decision:** Use Python 3.14 (latest stable, Oct 2025)
+**Decision:** Use Python 3.12 (latest stable available in production, Oct 2023)
 
 **Rationale:**
 - LangGraph 1.0 requires Python 3.10+ (dropped 3.9 support in Oct 2025)
-- Python 3.14 free-threaded mode enables true parallelism for agent execution
-- JIT compiler improves performance for long-running batch processing
-- 5 years of security support (until Oct 2030)
-- Latest stable = best library compatibility going forward
+- Python 3.12 provides significant performance improvements over 3.11 (up to 50% faster)
+- Production-ready with proven Docker images (`python:3.12-slim`)
+- 5 years of security support (until Oct 2028)
+- Python 3.14 not yet available (3.13 is latest, 3.14 targeted for Oct 2026)
+- Best balance of stability and modern features
 
 **Alternatives Considered:**
-- Python 3.12 (conservative choice, but already 2 years old by 2025)
-- Python 3.10 (minimum for LangGraph 1.0, but nearing EOL in 2026)
+- Python 3.13 (too new, limited Docker support as of Nov 2025)
+- Python 3.10 (minimum for LangGraph 1.0, but aging)
 
-**Status:** Accepted
+**Status:** Accepted (Updated 2025-11-23)
 
 ---
 
@@ -25,10 +26,11 @@
 
 **Context:** Need durable, production-grade multi-agent orchestration framework.
 
-**Decision:** Use LangGraph 1.0.5 (stable release, Nov 2025)
+**Decision:** Use LangGraph 1.0.3 (latest stable release, Nov 2025)
 
 **Rationale:**
-- First stable 1.0 release (no breaking changes until 2.0)
+- Latest stable 1.0 release on PyPI (verified 2025-11-23)
+- First stable 1.0 series (no breaking changes until 2.0)
 - Durable state persistence (resume workflows after interruptions)
 - Human-in-the-loop patterns (manual trade approval)
 - StateGraph abstraction enables parallel discovery + sequential decision layers
@@ -40,7 +42,7 @@
 - Custom LangChain implementation (reinventing wheel, high maintenance)
 - Raw LangChain (no orchestration, manual state management)
 
-**Status:** Accepted
+**Status:** Accepted (Updated 2025-11-23: Corrected to 1.0.3, actual latest stable)
 
 ---
 

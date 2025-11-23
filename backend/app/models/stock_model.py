@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, BigInteger
+from sqlalchemy import Column, String, Numeric
 from sqlalchemy.orm import relationship
 
 from app.models.base_model import BaseModel
@@ -6,10 +6,10 @@ from app.models.base_model import BaseModel
 class Stock(BaseModel):
     __tablename__ = "stocks"
 
-    ticker = Column(String, unique=True, index=True, nullable=False)
-    name = Column(String, nullable=False)
-    sector = Column(String, nullable=True) # Sector can be null if not available
-    market_cap = Column(BigInteger, nullable=True) # Market cap can be null, using BigInteger for large values
+    ticker = Column(String(10), unique=True, index=True, nullable=False)  # Added length constraint
+    name = Column(String(255), nullable=False)  # Added length constraint per architecture
+    sector = Column(String(100), nullable=True)  # Added length constraint per architecture
+    market_cap = Column(Numeric(15, 2), nullable=True)  # Changed to Numeric per architecture (GBP millions with decimals)
 
     # Define relationships (assuming other models will be defined later)
     # These relationships will be fully established once the other models are created

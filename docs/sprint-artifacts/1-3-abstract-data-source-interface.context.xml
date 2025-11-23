@@ -1,0 +1,274 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>3</storyId>
+    <title>Abstract Data Source Interface</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-23</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/1-3-abstract-data-source-interface.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>system architect</asA>
+    <iWant>an abstract DataSource interface that all data providers implement</iWant>
+    <soThat>new data sources (APIs, files, webhooks) can be added without changing core logic</soThat>
+    <tasks>
+      - Task 1: Define DataSource Abstract Base Class (AC: #1)
+      - Task 2: Implement DataSourceRegistry (AC: #2)
+      - Task 3: Implement YahooFinanceProvider (AC: #3)
+      - Task 4: Implement AlphaVantageProvider (AC: #3)
+      - Task 5: Implement Failover Logic (AC: #3)
+      - Task 6: Create Configuration System (AC: #4)
+      - Task 7: Write Unit Tests
+      - Task 8: Write Integration Tests
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="1" title="DataSource Abstract Base Class">
+      - Abstract methods: async def fetch() -> List[Signal], def get_source_name() -> str
+      - Standardized Signal objects with fields: ticker, signal_type, score, confidence, data, timestamp, source
+    </criterion>
+    <criterion id="2" title="DataSourceRegistry Pattern">
+      - Register/enable/disable sources via configuration
+      - List all available sources
+      - Execute fetch from all enabled sources
+      - Failed sources log errors but don't crash the system
+      - Registry executes sources in parallel for performance
+    </criterion>
+    <criterion id="3" title="Fallback Provider Implementations">
+      - YahooFinanceProvider: Free, basic price/volume data
+      - AlphaVantageProvider: Free tier (25 calls/day), emergency fallback
+      - Automatic failover: EODHD rate limit → retry → Yahoo, EODHD server error → Yahoo immediately
+      - Graceful degradation: Yahoo active → limited data, all down → cached data (24h), no cache → skip stocks
+    </criterion>
+    <criterion id="4" title="Configuration-Based Source Management">
+      - YAML config at config/data_sources.yaml
+      - Enable/disable sources without code changes
+      - Priority determines fallback order (1=primary, 2=first fallback, etc.)
+      - Environment variable substitution for API keys
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <artifact>
+        <path>docs/sprint-artifacts/tech-spec-epic-1.md</path>
+        <title>Epic Technical Specification: Foundation & Data Architecture</title>
+        <section>APIs and Interfaces - Abstract DataSource Interface</section>
+        <snippet>Defines DataSource ABC with async fetch() and get_source_name() methods. Returns standardized Signal dataclass with ticker, signal_type, score, confidence, data, timestamp, source. Includes concrete implementation example for EODHDProvider.</snippet>
+      </artifact>
+      <artifact>
+        <path>docs/sprint-artifacts/tech-spec-epic-1.md</path>
+        <title>Epic Technical Specification: Foundation & Data Architecture</title>
+        <section>Services and Modules - Data Sources</section>
+        <snippet>Data Sources module includes DataSource ABC, EODHDProvider, YahooFinanceProvider, AlphaVantageProvider, DataSourceRegistry. Dependencies: httpx (async HTTP), env vars for API keys. Registry manages multiple providers with enable/disable.</snippet>
+      </artifact>
+      <artifact>
+        <path>docs/epics/epic-1-foundation-data-architecture.md</path>
+        <title>Epic 1: Foundation & Data Architecture</title>
+        <section>Story 1.3: Abstract Data Source Interface</section>
+        <snippet>Implements DataSource interface with fallback providers (Yahoo Finance free, Alpha Vantage 25 calls/day). Automatic failover: EODHD rate limit → retry → Yahoo, server error → Yahoo immediately. Graceful degradation with cached data up to 24 hours.</snippet>
+      </artifact>
+      <artifact>
+        <path>docs/architecture/architecture-decision-records-adrs.md</path>
+        <title>Architecture Decision Records</title>
+        <section>ADR-007: Three-Tier Data Architecture</section>
+        <snippet>Uses EODHD (fundamentals, history, macro) as Tier 1 provider. CityFALCON for UK RNS (Tier 2). IBKR real-time only at execution (Tier 3). Total cost £125/month vs £300+ for premium feeds.</snippet>
+      </artifact>
+      <artifact>
+        <path>docs/architecture/data-architecture.md</path>
+        <title>Data Architecture</title>
+        <section>Database Schema - Signals Table</section>
+        <snippet>Signals table stores type, stock_ticker, strength (0-100), data (JSONB), agent_id, timestamp. Indexed on stock_ticker, timestamp DESC, agent_id. Flexible JSONB for agent-specific metadata.</snippet>
+      </artifact>
+    </docs>
+    <code>
+      <artifact>
+        <path>backend/app/models/signal_model.py</path>
+        <kind>model</kind>
+        <symbol>Signal</symbol>
+        <lines>7-23</lines>
+        <reason>Signal ORM model with JSONB data field - providers will create Signal instances. Fields: stock_id, stock_ticker, type, strength, agent_id, timestamp, data (JSONB for provider metadata).</reason>
+      </artifact>
+      <artifact>
+        <path>backend/app/models/stock_model.py</path>
+        <kind>model</kind>
+        <symbol>Stock</symbol>
+        <lines>6-24</lines>
+        <reason>Stock ORM model for ticker validation. DataSource implementations should validate tickers against this model before creating signals.</reason>
+      </artifact>
+      <artifact>
+        <path>backend/app/services/data_service.py</path>
+        <kind>service</kind>
+        <symbol>StockService.get_stock_by_ticker</symbol>
+        <lines>23-25</lines>
+        <reason>Use this method to validate tickers exist before creating signals in DataSource implementations.</reason>
+      </artifact>
+      <artifact>
+        <path>backend/app/services/data_service.py</path>
+        <kind>service</kind>
+        <symbol>SignalService.create_signal</symbol>
+        <lines>72-88</lines>
+        <reason>Extend data_service.py to add helper method that converts DataSource Signal dataclass to ORM Signal and persists to database.</reason>
+      </artifact>
+      <artifact>
+        <path>backend/app/core/database.py</path>
+        <kind>infrastructure</kind>
+        <symbol>get_db</symbol>
+        <lines>30-47</lines>
+        <reason>Async database session management. DataSource implementations that persist signals should use AsyncSession from get_db().</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <python>
+        <existing>
+          <package name="httpx" version="0.28.1">Already installed - async HTTP client for API calls</package>
+          <package name="pydantic" version="2.10.4">Already installed - data validation for Signal dataclass</package>
+          <package name="sqlalchemy" version="2.0.36">Already installed - ORM for database models</package>
+          <package name="asyncpg" version="0.30.0">Already installed - async PostgreSQL driver</package>
+          <package name="python-dotenv" version="1.0.1">Already installed - environment variable loading</package>
+          <package name="structlog" version="24.4.0">Already installed - structured logging for observability</package>
+        </existing>
+        <new_required>
+          <package name="yfinance" version="latest">Yahoo Finance API client for fallback provider</package>
+          <package name="alpha-vantage" version="latest">Alpha Vantage API client for emergency fallback</package>
+          <package name="pyyaml" version="latest">YAML configuration file parsing for config/data_sources.yaml</package>
+        </new_required>
+      </python>
+      <configuration_files>
+        <file path="config/data_sources.yaml">Provider configuration with enable/disable, API keys, priorities</file>
+        <file path=".env">Environment variables for EODHD_API_KEY, ALPHA_VANTAGE_API_KEY</file>
+      </configuration_files>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - Use Python ABC module for abstract interface definition (Architecture constraint)
+    - All data fetching must use async/await patterns for non-blocking I/O (Performance requirement)
+    - Registry pattern required for managing data sources (Design pattern from tech-spec)
+    - Fail-safe design: System continues with degraded data rather than crashing (Reliability requirement)
+    - All provider calls must be logged with timing and status for observability (Epic 1 Story 1.9)
+    - Store provider-specific metadata in Signal.data JSONB field (from Story 1.2 database schema)
+    - Follow async service method patterns from data_service.py (Consistency with Story 1.2)
+    - API keys must be stored in environment variables, never in code (Security from tech-spec)
+    - DataSource interface enables swappable providers per configuration (Modularity requirement)
+  </constraints>
+  <interfaces>
+    <interface>
+      <name>DataSource (ABC)</name>
+      <kind>Abstract Base Class</kind>
+      <signature>
+        async def fetch() -> List[Signal]
+        def get_source_name() -> str
+      </signature>
+      <path>backend/app/data_sources/base.py (to be created)</path>
+    </interface>
+    <interface>
+      <name>Signal (dataclass)</name>
+      <kind>Data Contract</kind>
+      <signature>
+        @dataclass
+        class Signal:
+            ticker: str
+            signal_type: str
+            score: int (0-100)
+            confidence: float (0.0-1.0)
+            data: dict
+            timestamp: datetime
+            source: str
+      </signature>
+      <path>backend/app/data_sources/base.py (to be created)</path>
+    </interface>
+    <interface>
+      <name>DataSourceRegistry</name>
+      <kind>Registry Pattern</kind>
+      <signature>
+        register(source: DataSource)
+        enable(source_name: str)
+        disable(source_name: str)
+        fetch_all() -> List[Signal]
+      </signature>
+      <path>backend/app/data_sources/registry.py (to be created)</path>
+    </interface>
+    <interface>
+      <name>SignalService.create_signal</name>
+      <kind>Service Method</kind>
+      <signature>
+        async def create_signal(db: AsyncSession, stock_id: UUID, stock_ticker: str, signal_type: str, strength: int, agent_id: str, timestamp, data: Optional[dict]) -> Signal
+      </signature>
+      <path>backend/app/services/data_service.py:72-88</path>
+    </interface>
+  </interfaces>
+  <tests>
+    <standards>
+      Unit tests use pytest with pytest-asyncio for async testing. Mock external API calls to avoid costs and ensure reproducibility. Testing framework: pytest==8.3.4, pytest-asyncio==0.24.0. Coverage target: 90%+ for DataSource interface and registry (critical infrastructure), 80%+ for provider implementations, 100% for failover logic (critical for reliability). Test files mirror source structure in tests/unit/ and tests/integration/.
+    </standards>
+    <locations>
+      tests/unit/test_data_sources.py
+      tests/integration/test_provider_failover.py
+    </locations>
+    <ideas>
+      <test id="AC1" description="Test DataSource ABC cannot be instantiated">
+        - Attempt to instantiate DataSource directly -> Expect TypeError
+        - Verify fetch() and get_source_name() are abstract methods
+      </test>
+      <test id="AC1" description="Test Signal dataclass validation">
+        - Create Signal with valid fields -> Success
+        - Create Signal with missing required fields -> Expect validation error
+        - Create Signal with invalid types (e.g., score > 100) -> Expect validation error
+      </test>
+      <test id="AC2" description="Test DataSourceRegistry registration and execution">
+        - Register YahooFinanceProvider -> Verify in registry
+        - Enable/disable provider -> Verify state changes
+        - List all available sources -> Verify correct list returned
+        - Execute fetch_all() with multiple enabled sources -> Verify signals from all sources
+      </test>
+      <test id="AC2" description="Test parallel source execution">
+        - Register 3 providers (mock slow responses: 1s, 2s, 3s)
+        - Execute fetch_all() -> Verify completes in ~3s (parallel), not 6s (sequential)
+      </test>
+      <test id="AC2" description="Test error isolation in registry">
+        - Register 3 providers: Provider1 (raises exception), Provider2 (succeeds), Provider3 (succeeds)
+        - Execute fetch_all() -> Verify Provider2 and Provider3 signals returned, Provider1 logged error but didn't crash
+      </test>
+      <test id="AC3" description="Test YahooFinanceProvider fetch and signal conversion">
+        - Mock Yahoo Finance API response with LSE stock data
+        - Call fetch() -> Verify returns standardized Signal objects
+        - Verify ticker format, signal_type, score range, timestamp
+      </test>
+      <test id="AC3" description="Test AlphaVantageProvider rate limiting">
+        - Mock 26 consecutive calls (exceeds 25/day limit)
+        - Verify first 25 succeed, 26th raises rate limit error
+      </test>
+      <test id="AC3" description="Test failover logic EODHD -> Yahoo">
+        - Mock EODHD API returns 429 (rate limit)
+        - System sleeps, retries 3x
+        - After 3 failures, fallback to Yahoo
+        - Verify Yahoo signals returned, failover logged
+      </test>
+      <test id="AC3" description="Test failover logic EODHD 5xx error -> Yahoo immediately">
+        - Mock EODHD API returns 503 (server error)
+        - System immediately fallbacks to Yahoo (no retries)
+        - Verify Yahoo signals returned
+      </test>
+      <test id="AC3" description="Test graceful degradation all providers down">
+        - Mock all providers (EODHD, Yahoo, Alpha Vantage) fail
+        - System uses cached data (up to 24 hours old)
+        - Verify cached signals returned, staleness flagged in logs
+      </test>
+      <test id="AC4" description="Test configuration loading and validation">
+        - Create test config YAML with valid provider config
+        - Load config -> Verify providers enabled/disabled correctly
+        - Verify priority-based failover ordering (1=primary, 2=first fallback)
+        - Test environment variable substitution for API keys
+      </test>
+      <test id="Integration" description="Test end-to-end data flow">
+        - Config -> Registry -> YahooFinanceProvider -> Signals -> Database
+        - Drop config file, initialize registry, fetch from Yahoo, persist to Signal table
+        - Verify signals stored in database with correct fields
+      </test>
+    </ideas>
+  </tests>
+</story-context>

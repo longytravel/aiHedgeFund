@@ -1,0 +1,321 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>4</storyId>
+    <title>EODHD API Integration (MVP Financial Data Provider)</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-23</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/1-4-eodhd-api-integration-mvp-financial-data-provider.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>discovery system</asA>
+    <iWant>to fetch UK stock data from a financial data provider (EODHD for MVP)</iWant>
+    <soThat>I have fundamental data, prices, and company information for analysis</soThat>
+    <tasks>
+- Task 1: Implement EODHDProvider Class
+- Task 2: Implement Historical Price Fetching
+- Task 3: Implement Fundamental Data Fetching
+- Task 4: Implement Company Profile Fetching
+- Task 5: Implement Analyst Estimates Fetching
+- Task 6: Implement Caching Layer
+- Task 7: Implement Rate Limiting
+- Task 8: Implement Retry Logic with Exponential Backoff
+- Task 9: Integrate with DataSourceRegistry
+- Task 10: Implement Error Handling and Logging
+- Task 11: Write Unit Tests
+- Task 12: Write Integration Tests
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+AC1: EODHD Provider Implementation - Fetch historical prices (OHLCV), fundamental data, financial ratios, company profile, analyst estimates; store all in flexible JSON structure
+
+AC2: DataSource Interface Compliance - Implement DataSource ABC with async fetch() and get_source_name(); return standardized Signal objects
+
+AC3: Caching and Rate Limiting - Cache data for 24h (configurable); respect 100k calls/day rate limit; retry with exponential backoff; failover to Yahoo Finance if limit exceeded
+
+AC4: UK Market-Specific Handling - Handle pence/pounds conversion; proper LSE exchange code formatting (.L or .LSE)
+
+AC5: Configuration-Based Provider Swapping - EODHD set as primary via config; swappable without code changes; enable/disable via DataSourceRegistry
+
+AC6: Error Handling and Graceful Degradation - Log errors; retry 3x with exponential backoff; fallback to cached data; failover to Yahoo Finance; continue operation with degraded data
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <!-- Technical Specification -->
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-1.md</path>
+        <title>Epic Technical Specification: Foundation & Data Architecture</title>
+        <section>APIs and Interfaces - DataSource Interface</section>
+        <snippet>Defines abstract DataSource interface with async fetch() returning List[Signal]. Concrete implementation EODHDProvider fetches fundamentals, prices from EODHD API. Provider swappable via config without code changes.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-1.md</path>
+        <title>Epic Technical Specification: Foundation & Data Architecture</title>
+        <section>Dependencies and Integrations - External Integrations</section>
+        <snippet>EODHD API endpoint https://eodhistoricaldata.com/api, requires API key (env: EODHD_API_KEY), 100k calls/day quota. Base URL for fundamentals: /fundamentals/{ticker}.LSE, EOD prices: /eod/{ticker}.LSE</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-1.md</path>
+        <title>Epic Technical Specification: Foundation & Data Architecture</title>
+        <section>Acceptance Criteria</section>
+        <snippet>AC4: EODHD Integration - Fetches fundamentals for LSE stocks, handles pence/pounds conversion, respects rate limits, caches data 24 hours, retry logic on failures</snippet>
+      </doc>
+
+      <!-- Architecture Documents -->
+      <doc>
+        <path>docs/architecture/data-architecture.md</path>
+        <title>Data Architecture</title>
+        <section>Core Tables - Signals</section>
+        <snippet>signals table stores discovery agent signals with columns: type (VARCHAR 50), stock_id, stock_ticker, strength (INT 0-100), data (JSONB), agent_id, timestamp. Indexed on stock_ticker, timestamp DESC, agent_id.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture/architecture-decision-records-adrs.md</path>
+        <title>ADR-007: Three-Tier Data Architecture</title>
+        <section>Decision</section>
+        <snippet>Tier 1: EODHD (fundamentals, history, macro) - £85/month. Cost optimization: EODHD All-In-One replaces 3-4 separate APIs. Total: £125/month vs. £300+ for premium real-time feeds.</snippet>
+      </doc>
+
+      <!-- Epic Document -->
+      <doc>
+        <path>docs/epics/epic-1-foundation-data-architecture.md</path>
+        <title>Epic 1: Foundation & Data Architecture</title>
+        <section>Story 1.4: EODHD API Integration</section>
+        <snippet>MVP Choice: EODHD (cost-effective, UK coverage). Swappability: Implements DataSource interface - can replace with Alpha Vantage, FMP, Bloomberg API. Store ALL metrics in JSONB columns (supports adding new metrics without schema changes).</snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <!-- Existing Interfaces -->
+      <code>
+        <path>backend/app/data_sources/base.py</path>
+        <kind>abstract_class</kind>
+        <symbol>DataSource</symbol>
+        <lines>69-150</lines>
+        <reason>Abstract base class that EODHD provider must implement. Defines async fetch() -> List[Signal] and get_source_name() -> str methods.</reason>
+      </code>
+      <code>
+        <path>backend/app/data_sources/base.py</path>
+        <kind>dataclass</kind>
+        <symbol>Signal</symbol>
+        <lines>14-67</lines>
+        <reason>Standardized signal dataclass that EODHD provider must return. Fields: ticker, signal_type, score (0-100), confidence (0.0-1.0), data (dict), timestamp, source.</reason>
+      </code>
+
+      <!-- Registry and Infrastructure -->
+      <code>
+        <path>backend/app/data_sources/registry.py</path>
+        <kind>service</kind>
+        <symbol>DataSourceRegistry</symbol>
+        <lines>20-316</lines>
+        <reason>Registry pattern for managing data sources. EODHD provider will be registered here with priority 1 (primary). Provides register(), enable(), disable(), fetch_all() methods.</reason>
+      </code>
+      <code>
+        <path>backend/app/data_sources/failover.py</path>
+        <kind>service</kind>
+        <symbol>DataSourceFailover</symbol>
+        <lines>29-444</lines>
+        <reason>Automatic failover and retry logic. EODHD should use this for retry with exponential backoff and failover to Yahoo Finance on failure. Implements priority-based failover sequence.</reason>
+      </code>
+
+      <!-- Example Provider Implementation -->
+      <code>
+        <path>backend/app/data_sources/providers/yahoo_provider.py</path>
+        <kind>provider</kind>
+        <symbol>YahooFinanceProvider</symbol>
+        <lines>20-231</lines>
+        <reason>Reference implementation of DataSource interface. Shows async fetch(), error handling, Signal creation patterns that EODHD provider should follow.</reason>
+      </code>
+
+      <!-- Configuration System -->
+      <code>
+        <path>backend/app/core/config.py</path>
+        <kind>config</kind>
+        <symbol>DataSourcesConfig</symbol>
+        <lines>72-270</lines>
+        <reason>Configuration loading from YAML with env var substitution. EODHD API key will be loaded from environment variable via ${EODHD_API_KEY} pattern.</reason>
+      </code>
+      <code>
+        <path>config/data_sources.yaml</path>
+        <kind>config_file</kind>
+        <symbol>providers.eodhd</symbol>
+        <lines>7-13</lines>
+        <reason>Configuration structure for EODHD provider. Already defined with enabled: true, priority: 1, rate_limit: 100000, cache_ttl_hours: 24.</reason>
+      </code>
+    </code>
+
+    <dependencies>
+      <python>
+        <package name="httpx" version="0.28.1">Async HTTP client for EODHD API calls</package>
+        <package name="pydantic" version="2.10.4">Data validation and settings management</package>
+        <package name="pydantic-settings" version="2.7.0">Settings management from env vars</package>
+        <package name="structlog" version="24.4.0">Structured logging for observability</package>
+        <package name="asyncio" version="builtin">Async/await patterns for non-blocking I/O</package>
+        <package name="pyyaml" version="6.0.2">YAML configuration file parsing</package>
+        <package name="python-dotenv" version="1.0.1">Environment variable loading from .env</package>
+      </python>
+      <external>
+        <api name="EODHD" url="https://eodhistoricaldata.com/api">Primary financial data provider</api>
+        <env_var name="EODHD_API_KEY">Required API key for EODHD authentication</env_var>
+      </external>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <!-- From Dev Notes and Architecture -->
+    <constraint>MUST implement DataSource abstract base class from backend/app/data_sources/base.py</constraint>
+    <constraint>MUST use async/await patterns for all API calls (non-blocking I/O)</constraint>
+    <constraint>MUST return List[Signal] dataclass objects with all required fields validated</constraint>
+    <constraint>MUST handle pence/pounds conversion for UK stocks (divide by 100 where needed)</constraint>
+    <constraint>MUST format LSE tickers with .L or .LSE suffix correctly</constraint>
+    <constraint>MUST respect EODHD rate limit of 100,000 calls/day</constraint>
+    <constraint>MUST implement caching with configurable TTL (default 24 hours)</constraint>
+    <constraint>MUST use exponential backoff retry logic: 1s, 3s, 9s between retries</constraint>
+    <constraint>MUST integrate with DataSourceRegistry for lifecycle management</constraint>
+    <constraint>MUST load configuration from config/data_sources.yaml with env var substitution</constraint>
+    <constraint>MUST use structlog for structured JSON logging (observability requirement)</constraint>
+    <constraint>MUST store ALL available metrics in JSONB data field (do not filter at ingestion)</constraint>
+    <constraint>MUST NOT crash on errors - log and return empty list for graceful degradation</constraint>
+    <constraint>MUST failover to Yahoo Finance if EODHD unavailable (use existing failover.py)</constraint>
+    <constraint>Provider MUST be swappable via configuration without code changes</constraint>
+  </constraints>
+
+  <interfaces>
+    <!-- DataSource Abstract Base Class -->
+    <interface>
+      <name>DataSource</name>
+      <kind>abstract_base_class</kind>
+      <signature>
+class DataSource(ABC):
+    @abstractmethod
+    async def fetch(self) -> List[Signal]:
+        """Fetch data and return normalized signals"""
+        pass
+
+    @abstractmethod
+    def get_source_name(self) -> str:
+        """Return unique source identifier"""
+        pass
+      </signature>
+      <path>backend/app/data_sources/base.py:69-150</path>
+    </interface>
+
+    <!-- Signal Dataclass -->
+    <interface>
+      <name>Signal</name>
+      <kind>dataclass</kind>
+      <signature>
+@dataclass
+class Signal:
+    ticker: str                 # e.g., "VOD.L"
+    signal_type: str            # e.g., "FUNDAMENTAL_DATA", "PRICE_DATA"
+    score: int                  # 0-100
+    confidence: float           # 0.0-1.0
+    data: Dict[str, Any]        # Provider-specific metadata (EODHD metrics here)
+    timestamp: datetime         # UTC timezone-aware
+    source: str                 # "eodhd_fundamental"
+      </signature>
+      <path>backend/app/data_sources/base.py:14-67</path>
+    </interface>
+
+    <!-- DataSourceRegistry -->
+    <interface>
+      <name>DataSourceRegistry</name>
+      <kind>service_class</kind>
+      <signature>
+class DataSourceRegistry:
+    def register(self, source: DataSource) -> None
+    def enable(self, source_name: str) -> None
+    def disable(self, source_name: str) -> None
+    def is_enabled(self, source_name: str) -> bool
+    async def fetch_all(self) -> List[Signal]
+      </signature>
+      <path>backend/app/data_sources/registry.py:20-316</path>
+    </interface>
+
+    <!-- EODHD API Endpoints (to be used) -->
+    <interface>
+      <name>EODHD Fundamentals API</name>
+      <kind>rest_endpoint</kind>
+      <signature>GET https://eodhistoricaldata.com/api/fundamentals/{ticker}.LSE?api_token={key}</signature>
+      <path>external</path>
+    </interface>
+    <interface>
+      <name>EODHD EOD Prices API</name>
+      <kind>rest_endpoint</kind>
+      <signature>GET https://eodhistoricaldata.com/api/eod/{ticker}.LSE?api_token={key}&amp;from={date}&amp;to={date}</signature>
+      <path>external</path>
+    </interface>
+    <interface>
+      <name>EODHD Calendar Earnings API</name>
+      <kind>rest_endpoint</kind>
+      <signature>GET https://eodhistoricaldata.com/api/calendar/earnings?api_token={key}&amp;symbols={ticker}.LSE</signature>
+      <path>external</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+Use pytest 8.3.4 with pytest-asyncio 0.24.0 for async tests. Async tests marked with @pytest.mark.asyncio. Mock external API calls using pytest-mock. Coverage target: 90%+ for EODHDProvider (critical for data reliability). Use structlog for test logging. Follow existing patterns from tests/unit/test_data_sources.py and tests/integration/test_provider_failover.py.
+    </standards>
+
+    <locations>
+      <location>tests/unit/test_data_sources.py - Unit tests for EODHD provider</location>
+      <location>tests/integration/test_provider_failover.py - Integration tests for EODHD failover scenarios</location>
+    </locations>
+
+    <ideas>
+      <!-- Unit Tests (AC #1, #2) -->
+      <idea ac="1,2">Test EODHDProvider implements DataSource interface correctly (has fetch() and get_source_name() methods)</idea>
+      <idea ac="1">Test fetch_historical_prices() with mocked EODHD API response - verify OHLCV data parsed correctly</idea>
+      <idea ac="1">Test fetch_fundamentals() parses income statement, balance sheet, cash flow from mocked response</idea>
+      <idea ac="1">Test fetch_company_profile() extracts sector, industry, market cap from mocked response</idea>
+      <idea ac="1">Test fetch_analyst_estimates() handles stocks with analyst coverage and without (returns None gracefully)</idea>
+      <idea ac="2">Test get_source_name() returns "eodhd_fundamental"</idea>
+      <idea ac="2">Test fetch() returns List[Signal] with all required fields validated</idea>
+
+      <!-- Caching Tests (AC #3) -->
+      <idea ac="3">Test caching logic - first call hits API, second call returns cached data</idea>
+      <idea ac="3">Test cache expiry - data older than 24 hours triggers fresh API call</idea>
+      <idea ac="3">Test cache key format includes ticker and data type</idea>
+
+      <!-- Rate Limiting Tests (AC #3) -->
+      <idea ac="3">Test rate limiting - below limit allows API calls</idea>
+      <idea ac="3">Test rate limiting - at 100k calls/day limit blocks new calls</idea>
+      <idea ac="3">Test rate limiting - exceeded limit fails gracefully and uses Yahoo Finance fallback</idea>
+
+      <!-- Retry Logic Tests (AC #3, #6) -->
+      <idea ac="3,6">Test retry logic - 429 rate limit error retries with exponential backoff (1s, 3s, 9s)</idea>
+      <idea ac="6">Test retry logic - 5xx server error retries 3 times before failing over</idea>
+      <idea ac="6">Test retry logic - success on 2nd retry returns data correctly</idea>
+      <idea ac="6">Test retry logic - all retries fail triggers Yahoo Finance failover</idea>
+
+      <!-- UK Market Handling Tests (AC #4) -->
+      <idea ac="4">Test pence/pounds conversion - prices in pence divided by 100 for GBP amounts</idea>
+      <idea ac="4">Test LSE ticker formatting - .L suffix handled correctly</idea>
+      <idea ac="4">Test LSE ticker formatting - .LSE suffix handled correctly</idea>
+
+      <!-- Error Handling Tests (AC #6) -->
+      <idea ac="6">Test network error handling - connection timeout logs error and returns empty list</idea>
+      <idea ac="6">Test API error handling - invalid API key logs error and returns empty list</idea>
+      <idea ac="6">Test API error handling - invalid ticker logs warning and continues</idea>
+      <idea ac="6">Test graceful degradation - API down uses cached data if available</idea>
+      <idea ac="6">Test graceful degradation - no cache available returns empty list and logs critical error</idea>
+
+      <!-- Integration Tests (AC #5) -->
+      <idea ac="5">Test DataSourceRegistry integration - register EODHD, enable, fetch returns signals</idea>
+      <idea ac="5">Test DataSourceRegistry integration - disable EODHD, fetch returns no EODHD signals</idea>
+      <idea ac="5">Test configuration loading - EODHD config loaded from config/data_sources.yaml</idea>
+      <idea ac="5">Test configuration loading - ${EODHD_API_KEY} env var substituted correctly</idea>
+      <idea ac="5">Test provider swapping - change primary_fundamental_provider to yahoo, system uses Yahoo instead</idea>
+
+      <!-- Integration Tests with Real API (Limited) -->
+      <idea ac="1,4">Test end-to-end with real EODHD API - fetch VOD.L fundamentals (1 call, validate response structure)</idea>
+      <idea ac="1,3">Test caching reduces API calls - fetch VOD.L twice, verify second is from cache (monitor API call count)</idea>
+      <idea ac="3,6">Test failover - mock EODHD failure, verify Yahoo Finance succeeds and returns signals</idea>
+    </ideas>
+  </tests>
+</story-context>

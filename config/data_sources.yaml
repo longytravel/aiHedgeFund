@@ -1,0 +1,41 @@
+# Data Sources Configuration
+# Priority determines fallback order (1 = primary, 2 = first fallback, etc.)
+
+primary_fundamental_provider: eodhd
+
+providers:
+  eodhd:
+    enabled: true
+    api_key: ${EODHD_API_KEY}
+    priority: 1
+    description: "Primary data provider for fundamentals, prices, and analyst estimates"
+    rate_limit: 100000  # calls per day
+    cache_ttl_hours: 24
+
+  yahoo:
+    enabled: true
+    priority: 2
+    description: "Free fallback provider for basic price/volume data"
+    rate_limit: null  # No rate limit
+    cache_ttl_hours: 1
+
+  alpha_vantage:
+    enabled: false
+    api_key: ${ALPHA_VANTAGE_API_KEY}
+    priority: 3
+    description: "Emergency fallback provider (25 calls/day free tier)"
+    rate_limit: 25  # calls per day (free tier)
+    cache_ttl_hours: 6
+
+# Failover settings
+failover:
+  max_retries: 3
+  retry_delays: [60, 120, 180]  # seconds between retries
+  use_cache_on_failure: true
+  cache_ttl_hours: 24
+
+# Tickers to monitor (optional, can be overridden at runtime)
+# tickers:
+#   - VOD.L
+#   - LLOY.L
+#   - BP.L
